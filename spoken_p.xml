@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<voicemail>
+<!-- innovaphone Spoken Presence for DECT and analogue Phones == innovaphone AG V1.00 KWA 2016 -->
+
+<!-- ======================= set CFU ==================================== -->
+	<function define="setCFU">
+		<pbx-upd-obj name="$cn" type="cfu" value="$ownNumber"/>
+		<assign out="$Done" value="True"/>
+		<lib-strcat string="$sprache" string2="message_saved.$coder" out-string="$Pmess" />  
+		<store-get root="" name="$Pmess" out-url="$ctrl" />   
+		<pbx-prompt url="$ctrl"/>
+		<store-get root="" name="silence.$coder" out-url="$ctrl" />            
+		<pbx-prompt url="$ctrl" sec="1" repeat="false" />	
+		<pbx-disc/>
+	</function>
+<!-- ======================= Set parameter ==================================== -->
+	<function define="setparameter">
+  		<index out="$res1" value="$cdpn" pos="1" size="1"/>	  
+		<index out="$res2" value="$cdpn" pos="2" size="4"/>	  	 
+		<lib-strcat string="$presencetype" string2="$res1" out-string="$presencetype"/>	  	
+		<lib-strcat string="$time" string2="$res2" out-string="$time"/>
+	  	<index out="$hour" value="$time" pos="1" size="2"/>	
+		<index out="$minute" value="$time" pos="3" size="2"/>	  	
+		<switch var="$presencetype">		
+			<case equal="0">  <!-- 0 Clear Presence and CFU -->	
+				<pbx-set-presence name="$cn"/>			
+				<pbx-upd-obj name="$cn" type="cfu" value=""/>	
+				<pbx-disc/>				  
+                	</case>	
+			<case equal="1"> <!-- 1HHMM Set Away with note of time and CFU -->
+				<lib-strcat out-string="$part1" string="$hour" string2=":" />	
+				<lib-strcat out-string="$hourminute" string="$part1" string2="$minute" />		
+				<lib-strcat out-string="$note" string="Assente fino alle  " string2="$hourminute" />   
+				<pbx-set-presence name="$cn" activity="away" note="$note" />				
+				<call name="setCFU" />         
+                        </case>		
+	                <case equal="2"> <!-- 2HHMM Set Busy with note of time and CFU -->
+				<lib-strcat out-string="$part1" string="$hour" string2=":" />		
+				<lib-strcat out-string="$hourminute" string="$part1" string2="$minute" />
+				<lib-strcat out-string="$note" string="Occupato fino alle " string2="$hourminute" />			
+				<pbx-set-presence name="$cn" activity="busy" note="$note" />			
+				<call name="setCFU" />   			
+			</case>
+			<case equal="3"> <!-- 3HHMM Set Lunch with note of time and CFU -->
+				<lib-strcat out-string="$part1" string="$hour" string2=":" />		
+				<lib-strcat out-string="$hourminute" string="$part1" string2="$minute" />	
+				<lib-strcat out-string="$note" string="A pranzo fino alle " string2="$hourminute" />		
+				<pbx-set-presence name="$cn" activity="lunch" note="$note" />				
+				<call name="setCFU" />   					
+			</case>	
+			<case equal="4"> <!-- 4HHMM Set Meeting with note of time and CFU -->	
+				<lib-strcat out-string="$part1" string="$hour" string2=":" />		
+				<lib-strcat out-string="$hourminute" string="$part1" string2="$minute" />					
+				<lib-strcat out-string="$note" string="Riunione fino alle " string2="$hourminute" />			
+				<pbx-set-presence name="$cn" activity="meeting" note="$note" />			
+				<call name="setCFU" />   		
+			</case>		
+			<case equal="5">  <!-- 5HHMM Set Vacation with note of date and CFU -->		
+				<lib-strcat out-string="$part1" string="$hour" string2="/" />	
+				<lib-strcat out-string="$hourminute" string="$part1" string2="$minute" />		
+				<lib-strcat out-string="$note" string="In ferie fino al   " string2="$hourminute" />	
+				<pbx-set-presence name="$cn" activity="vacation" note="$note" />              
+				<call name="setCFU" />   	
+			</case>				
+	       	</switch>
+		<assign out="$Done" value="True"/>
+	        <store-get root="" name="$myError" out-url="$ctrl-error" />				
+		<pbx-prompt url="$ctrl-error" />
+		<pbx-disc/>
+   	</function> 
+<!-- ======================= Promt a Time ==================================== -->
+	<function define="PromptTime">		
+		<switch var="$minute"> 
+                       <case equal="">       
+				<return/>   
+			</case>
+    			<case less="10">       
+				<index out="$minute" value="$minute" pos="2" size="1"/>      
+			</case> 
+		</switch>
+		<switch var="$hour">                        
+    			<case less="10">       
+				<index out="$hour" value="$hour" pos="2" size="1"/>      
+			</case> 
+		</switch>       
+		<lib-strcat string="$sprache" string2="$hour" out-string="$fileprefix" />   
+                <lib-strcat string="$fileprefix" string2=".$coder" out-string="$filename" />       
+                <store-get root="" name="$filename" out-url="$ctrl-hour" />     
+ 		<lib-strcat string="$sprache" string2="$minute" out-string="$fileprefix" />            
+            	<lib-strcat string="$fileprefix" string2=".$coder" out-string="$filename" />            
+            	<store-get root="" name="$filename" out-url="$ctrl-min" />                
+		<pbx-prompt url="$ctrl-hour"/>            	
+		<pbx-prompt url="$ctrl-min"/>                
+	</function>
+<!-- ======================= Promt a Date ==================================== -->
+	<function define="PromptDate">	
+		<switch var="$hour">                        
+    			<case less="10">       
+				<index out="$hour" value="$hour" pos="2" size="1"/>      
+			</case>               
+		</switch>           
+		<lib-strcat string="$sprache" string2="$hour" out-string="$fileprefix" />   
+                <lib-strcat string="$fileprefix" string2=".$coder" out-string="$filename" />       
+                <store-get root="" name="$filename" out-url="$ctrl-hour" /> 
+		<lib-strcat string="$sprache" string2="month_" out-string="$myname" />                   
+		<lib-strcat string="$myname" string2="$minute" out-string="$fileprefix" />              
+		<lib-strcat string="$fileprefix" string2=".$coder" out-string="$filename" />                
+		<store-get root="" name="$filename" out-url="$ctrl-month" />       
+		<pbx-prompt url="$ctrl-hour"/>          		
+		<pbx-prompt url="$ctrl-month"/>					
+	</function>
+<!-- ======================= User has a CFU to this XML promt the Presence if any==================================== -->
+	<function define="UserHasAPresence">	
+		<pbx-get-presence name="$legcn" out-activity="$a" out-note="$n"/>			
+		<lib-strcat string="$presencetype" string2="$a" out-string="$presencetype"/>	
+		<lib-strcat string="$note" string2="$n" out-string="$note"/>	
+		<index out="$hour" value="$note" pos="20" size="2"/>			
+		<index out="$minute" value="$note" pos="23" size="2"/>
+		<store-get root="" name="$myError" out-url="$ctrl" />			
+		<switch var="$presencetype">
+			<case equal="away"> 	
+				<lib-strcat string="$sprache" string2="away.$coder" out-string="$Pmess" />   
+			</case>		
+			<case equal="busy">
+				<lib-strcat string="$sprache" string2="busy.$coder" out-string="$Pmess" />   
+			</case>
+			<case equal="lunch">
+				<lib-strcat string="$sprache" string2="lunch.$coder" out-string="$Pmess" />   
+			</case>					
+			<case equal="meeting">
+				<lib-strcat string="$sprache" string2="meeting.$coder" out-string="$Pmess" />   
+			</case>
+			<case equal="vacation">	
+				<lib-strcat string="$sprache" string2="vacation.$coder" out-string="$Pmess" />   
+				<assign out="$Datum" value="true"/>	
+			</case>	
+		</switch> 
+		<if notcond="$Pmess">	
+			<pbx-upd-obj name="$legcn" type="cfu" value=""/>
+			<pbx-fwd name="$leg2" />	
+		</if>
+		<store-get root="" name="beep.$coder" out-url="$beep" />   
+		<pbx-prompt url="$beep"/>
+		<store-get root="" name="$Pmess" out-url="$ctrl" />
+		<pbx-prompt url="$ctrl"/>
+		<if notcond="$Datum">			
+			<call name="PromptTime" />
+		</if>
+		<if cond="$Datum">	
+			<call name="PromptDate" />
+		</if>
+	</function> 
+<!-- =======================Main Routine==================================== --> 
+	<function define="Main">	
+		<!-- =======================SETUP =============== --> 
+		<assign out="$ownNumber" value="*71"/>                              <!-- Insert in the number of this xml vm object -->	
+		<assign out="$sprache" value="en_"/>                                <!-- Insert the language tag (for example it_ for Italian) -->	
+		<!-- =======================SETUP =============== --> 
+		<lib-strcat string="$sprache" string2="an_error_occurred.$coder" out-string="$myError" /> 
+		<assign out="$presencetype" value="" />
+		<assign out="$time" value=""/>		
+		<assign out="$Datum" value=""/>	
+		<assign out="$abort" value=""/>		
+		<assign out="$dtmflength" value=""/>
+		<assign out="$EOD" value=""/>
+		<assign out="$leg2" value=""/>
+		<assign out="$dialednumber" value=""/>	
+		<assign out="$year" value="0"/>
+		<assign out="$Done" value=""/>
+		<assign out="$note" value="" />		
+		<assign out="$Pmess" value="" />		
+		<pbx-getcallinfo out-cgpn="$cgpn" out-cdpn="$cdpn" out-leg2="$leg2" />
+		<pbx-finduser-e164 e164="$cgpn" out-cn="$cn" />
+		<pbx-finduser-e164 e164="$leg2" out-cn="$legcn" />
+		<if cond="$legcn">
+            		<call name="UserHasAPresence" />
+			<switch var="$leg2">
+	    			<case equal="$cgpn">
+					<store-get root="" name="silence.$coder" out-url="$ctrl" />            
+					<pbx-prompt url="$ctrl" sec="1" repeat="false" />
+					<pbx-disc/> 
+				</case>
+			</switch>
+			<lib-strcat string="$sprache" string2="you_will_be_connected.$coder" out-string="$Pmess" />  
+			<store-get root="" name="$Pmess" out-url="$ctrl" />   
+			<pbx-prompt url="$ctrl"/>
+			<store-get root="" name="silence.$coder" out-url="$ctrl" />            
+			<pbx-prompt url="$ctrl" sec="1" repeat="false" />
+			<pbx-fwd name="$leg2" />
+            	</if>
+		<event type="timer" name="vbguard">
+	       		<pbx-disc/>
+	        </event>
+		<event type="call-end">
+		<if notcond="$Done">
+			<call name="setparameter" />  <!-- Goto Action because Call end detected -->
+		</if>
+	        </event>
+	        <timer name="vbguard" sec="10"/> 
+		<event type="dtmf" block="false">
+			<pbx-getdtmfdigit out-dtmf="$dtmf" />
+			<switch var="$dtmf">
+	    			<case equal="#">
+					<call name="setparameter" /> <!-- Goto Action because # detected --> 
+				</case>
+			</switch>
+			<lib-strcat string="$cdpn" string2="$dtmf" out-string="$cdpn"/>	
+			<lib-strlen out="$dtmflength" string="$cdpn"/>
+			<switch var="$dtmflength">	
+				<case greater-equal="5">   
+	     				<call name="setparameter" />  <!-- Goto Action because 5 digits detected -->             
+				</case>	
+				<case equal="1"> 
+					<switch var="$dtmf">	
+						<case equal="0">   
+			     				<call name="setparameter" />  <!-- Goto Action because clear presence detected -->             
+						</case>	
+					</switch>    
+				</case>	
+			</switch>    
+		</event>
+		<switch var="$cdpn">	
+			<case equal="0"> 
+				<call name="setparameter" />  <!-- Goto Action because Blockdial 0 (clear) detected -->             
+			</case>	
+		</switch>
+		<lib-strlen out="$dtmflength" string="$cdpn"/>
+		<switch var="$dtmflength">
+			<case greater-equal="5">   
+	     			<call name="setparameter" />  <!-- Goto Action because 5 digits detected -->             
+			</case>	
+		</switch>
+		<while notcond="$abort">
+                       	<store-get root="" name="silence.$coder" out-url="$ctrl" />            
+			<pbx-prompt url="$ctrl" sec="4" repeat="true" barge-in="true" />
+		</while>  	
+	</function>    
+</voicemail>
+
+
+<!-- Spoken Presence for DECT wiki-src/xml/SpokPres 1,0,0,0 (C) innovaphone AG 2010-2016 -->
